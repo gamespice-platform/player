@@ -1,27 +1,15 @@
-This is the **player** asset for TMC's **Dot** collection. It is the row every other player-facing asset reads: who is in the session, what side they are on, whether they are in the world, and what represents them while they are.
+# dot-player
 
-This collection of assets provides modular building blocks for creating games and applications within the TMC ecosystem, ensuring consistency and interoperability across all `dot-*` assets. This includes core functionality, networking, authentication, cloud integration, and more.
+One shared record per player, so team, class, alive state and stats stop living in four separate dictionaries that disagree after a reconnect.
 
-**These assets are COMPLETELY OPEN SOURCE**. You are free to use, modify, and distribute them under the terms of the MIT license. The only thing not open source is the back-end web infrastructure. So if you opt into using your own authentication backend instead of integrating with TMC, you will need to build and integrate your own back-end infrastructure.
-
-## From Maintainer & WARNING
-This asset, along with all the others, was built initially with **Claude Code** and will continue to be maintained and extended using it. This is because I (`gamemann`) cannot build the entire TMC platform alone (I wish I could lol).
-
-**Please treat this as partially tested.** Every asset has its own headless test suite and those suites pass, but very little of this has been in front of real players yet. Expect rough edges, and please report anything you run into.
-
-I intend on reviewing code, testing, and editing documentation regularly. If you're interested in helping out, please let me know!
-
-## Why this exists
-
-Before it, a team lived in dot-match, a class lived in dot-loadout, an alive flag lived in dot-spectate and a key lived in dot-stats. Four dictionaries, keyed the same way, updated from four places — and disagreeing about anybody who reconnected.
-
-`DotPlayerRoster` is the one row they all read.
+`DotPlayerRoster` holds the rows. `DotPlayer` is the node that represents a player in the scene. `DotPlayerComponent` is the base class other player addons extend.
 
 ## Install
 
-Copy `addons/dot_player/` and `addons/dot_core/` into your project and enable both in *Project → Project Settings → Plugins*.
+1. Copy `addons/dot_player/` and `addons/dot_core/` into your project.
+2. Enable both in *Project > Project Settings > Plugins*.
 
-Requires Godot 4.7 or newer.
+Needs Godot 4.7 or newer.
 
 ## Use
 
@@ -32,61 +20,52 @@ add_child(roster)
 
 roster.join("ada", "Ada", peer_id, tick)
 roster.set_team("ada", &"blue")
-roster.set_alive("ada", true)          # counts the spawn for you
+roster.set_alive("ada", true)
 
 # Once a tick or once a second: frees seats whose reconnect window is up.
 roster.advance(tick)
 ```
 
-On a client, the same class with `authoritative = false`:
+On a client, use the same class with `authoritative = false`:
 
 ```gdscript
-mirror.apply_wire(payload)             # the whole roster, on connect
-mirror.apply_row(row)                  # one changed row, after that
+mirror.apply_wire(payload)   # the whole roster, on connect
+mirror.apply_row(row)        # one changed row afterwards
 ```
 
-**A mirror decides nothing.** Every mutator on one is refused with `CODE_FORBIDDEN`, because a client that can quietly assign itself to a team is a client that will.
+A mirror decides nothing. Every change method on it fails with `CODE_FORBIDDEN`.
 
-## A dropped connection is not a departure
+## Reconnecting
 
-`note_disconnected` holds the seat. `join` with the same key inside the window is a **rejoin**: the same record, the same team, the same score, the original join tick, a new peer id.
+A dropped connection keeps the player's seat. Calling `join` with the same key inside the reconnect window is a rejoin: same record, team, score and join tick, new peer id. Set `reconnect_window_sec = 0` to remove players immediately, which suits a lobby. Held seats count towards `max_players` by default, so a stranger cannot take the seat of a player who is reconnecting.
 
-A player whose router hiccups mid-round and comes back to an empty scoreboard has, from their side, been punished for their hardware. `reconnect_window_sec = 0` collapses this into an immediate removal, which is what a lobby wants and a competitive match does not.
+## Settings
 
-Held seats count towards `max_players` by default. Freeing the slot the moment a connection drops is how a full server lets a stranger take the place of the player who is reconnecting into it.
+All in `DotPlayerConfig`, layered like every dot-core config (defaults, JSON file, environment, command line).
 
-## `DotPlayer` is a container, not a character
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `max_players` | 0 | Player limit. 0 means unlimited. |
+| `reconnect_window_sec` | 60 | How long a dropped player's seat is held. 0 removes immediately. |
 
-It extends `Node` — deliberately not `CharacterBody3D`.
+## Nodes
 
-The moment it extends a body it has picked a dimension, and hungario is 2D while arena is 3D. Worse, it has picked a physics model: a spectator, a dead player and a player riding in a vehicle are all participants with no body of their own at that moment.
+`DotPlayer` extends `Node`, not a body, so it works in 2D and 3D and for players with no body (spectators, the dead, passengers). It finds its body and components in its children.
 
-```
-DotPlayer              player_key = "ada"
-  CharacterBody3D      the body, found rather than inherited
-  DotFpsController     a DotPlayerComponent
-  DotPlayerChar        a DotPlayerComponent
-  DotPlayerAnimDriver  a DotPlayerComponent
-```
+`DotPlayerComponent` finds its player by walking up the tree, so no `NodePath` is needed. Subclasses override `_on_bound` and `_on_unbound`, not `_ready`, because the key is assigned after `_ready`. `is_active()` checks the bind and the `local_only` rule.
 
-## `DotPlayerComponent` is why nothing needs a path
-
-Every other player addon's node extends it, and every one of them finds its player by walking up rather than by an exported `NodePath` somebody set in a scene the spawner then instanced under a different parent.
-
-Subclasses override `_on_bound` / `_on_unbound`, **not `_ready`** — because `_ready` runs before a spawner has assigned the key, and a component that read the key there would read an empty one and then silently do nothing for the rest of the round.
-
-`is_active()` is the one call a subclass's `_process` starts with: it checks the bind and the `local_only` rule in one place, so thirty players on a server are not thirty slightly different copies of the same two conditions.
-
-## What is in the box
-
-| | |
+| Class | Purpose |
 | --- | --- |
-| `DotPlayerRecord` | The row. Key, name, peer, team, class, character, alive, counters, metadata, and a wire form that tolerates missing fields. |
-| `DotPlayerRoster` | Authoritative on one machine, mirrored on the rest. Join, rejoin, hold, expire, and a stable key order. |
-| `DotPlayerConfig` | Capacity, the reconnect window, name handling. Layered the family's way. |
-| `DotPlayer` | The node. Finds its roster, its body and its components; joins a group per key. |
-| `DotPlayerComponent` | The base. Binds by walking up, is told when the key changes, knows whether it should be running. |
+| `DotPlayerRecord` | One player row: key, name, peer, team, class, character, alive, counters, metadata. |
+| `DotPlayerRoster` | Joins, rejoins, held seats, expiry, stable key order. Authoritative on the server, mirrored on clients. |
+| `DotPlayerConfig` | Capacity, reconnect window, name handling. |
+| `DotPlayer` | The scene node. |
+| `DotPlayerComponent` | Base class for player components. |
 
-## Licence
+See [docs/design.md](docs/design.md) for details.
 
-MIT. See [LICENSE](LICENSE).
+## Status and licence
+
+Part of the TMC **dot-\*** family of Godot addons. Written with Claude Code and maintained by `gamemann`. Every addon has headless tests, but little of this has been played by real users yet, so expect rough edges and please [open an issue](https://github.com/modcommunity/dot-player/issues) when you hit one.
+
+MIT licence, see [LICENSE](LICENSE). The only closed part of the TMC platform is the web back end; you can use your own instead of TMC's.
