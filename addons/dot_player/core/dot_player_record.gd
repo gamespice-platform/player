@@ -10,18 +10,18 @@ extends RefCounted
 ## chosen class have to survive all three.
 ##
 ## The fields here are the ones every addon in this family already asks about
-## separately. dot-match has a team, dot-loadout has a class, dot-spectate has an alive
-## flag, dot-stats has a key. One row, and the rest read it.
+## separately. GameSpice Match has a team, GameSpice Loadout has a class, GameSpice Spectate has an alive
+## flag, GameSpice Stats has a key. One row, and the rest read it.
 
 ## The stable identity. Not the peer id and not the display name.
 ##
 ## [b]Both of those change and this must not.[/b] A peer id is reassigned on reconnect
 ## and a display name is whatever the player typed; a key is what a ban, a statistic and
-## a scoreboard row are filed under, and dot-user is where one comes from in a session
+## a scoreboard row are filed under, and GameSpice User is where one comes from in a session
 ## that has identity at all.
 var key: String = ""
 
-## What to show. Free text, validated by dot-user rather than here.
+## What to show. Free text, validated by GameSpice User rather than here.
 var display_name: String = ""
 
 ## The multiplayer peer, or 0 for a bot, a local player, or somebody disconnected.
@@ -33,7 +33,7 @@ var team: StringName = &""
 ## Which class. Not [code]class[/code]: that is a reserved word.
 var player_class: StringName = &""
 
-## Which character they chose, for dot-player-char.
+## Which character they chose, for GameSpice Player Char.
 var char_id: StringName = &""
 
 ## Whether they are in the world right now.

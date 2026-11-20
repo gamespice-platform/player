@@ -215,7 +215,7 @@ func is_alive() -> bool:
 
 ## The team, as [DotSpawnArea3D] and friends ask for it by duck typing.
 ##
-## Named for the caller rather than for this class: dot-spawn calls
+## Named for the caller rather than for this class: GameSpice Spawn calls
 ## [code]spawn_team[/code] on whatever body entered an area, and having the player node
 ## answer it means a game does not have to write a two-line adapter on every body.
 func spawn_team() -> StringName:
@@ -241,7 +241,7 @@ func body() -> Node:
 ## Where this player is, as a 3D point. Zero when they have no body.
 ##
 ## One accessor for both dimensions, with Z unused in 2D, because every consumer —
-## dot-spawn's danger scoring, dot-spectate's camera, a HUD's compass — otherwise needs
+## GameSpice Spawn's danger scoring, GameSpice Spectate's camera, a HUD's compass — otherwise needs
 ## its own branch and one of them gets it wrong.
 func world_position() -> Vector3:
 	var b := body()
@@ -270,7 +270,7 @@ func components() -> Array[DotPlayerComponent]:
 
 ## The first component whose class matches [param type_name], or null.
 ##
-## By name rather than by type so that dot-player does not have to import every addon
+## By name rather than by type so that GameSpice Player does not have to import every addon
 ## that might supply one — which is the whole reason this is the base package and they
 ## are not.
 func component(type_name: StringName) -> DotPlayerComponent:

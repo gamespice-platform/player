@@ -1,4 +1,4 @@
-# dot-player design
+# GameSpice Player design
 
 Why the addon is shaped the way it is. The one-line rules are in [CLAUDE.md](../CLAUDE.md).
 
@@ -6,7 +6,7 @@ Why the addon is shaped the way it is. The one-line rules are in [CLAUDE.md](../
 
 **There is exactly one row per participant, and everything else reads it.**
 
-This addon exists because there were four. A team lived in dot-match, a class in dot-loadout, an alive flag in dot-spectate and a key in dot-stats: four dictionaries keyed the same way, written from four places, and guaranteed to disagree about anybody who reconnected. `DotPlayerRecord` is the row; `DotPlayerRoster` owns it; nothing else should keep a parallel dictionary keyed by player.
+This addon exists because there were four. A team lived in GameSpice Match, a class in GameSpice Loadout, an alive flag in GameSpice Spectate and a key in GameSpice Stats: four dictionaries keyed the same way, written from four places, and guaranteed to disagree about anybody who reconnected. `DotPlayerRecord` is the row; `DotPlayerRoster` owns it; nothing else should keep a parallel dictionary keyed by player.
 
 The second idea shapes the nodes: **a player node is a container, not a character.** `DotPlayer extends Node`. The moment it extends a body it has chosen a dimension, and this family ships 2D and 3D games, and it has chosen a physics model, when a spectator, a dead player and a passenger in a vehicle are all participants with no body of their own.
 
@@ -23,7 +23,7 @@ Two details that look like details and are not:
 
 ## `authoritative` is a flag, not a second class
 
-One class, two configurations. A mirror refuses every mutator with `CODE_FORBIDDEN` and an authoritative roster refuses `apply_wire`, because a server that can be told what its own roster is by a packet has no roster at all. The pattern is dot-spectate's, and the reason is the same one: a listen server needs both in one process, which rules out a singleton.
+One class, two configurations. A mirror refuses every mutator with `CODE_FORBIDDEN` and an authoritative roster refuses `apply_wire`, because a server that can be told what its own roster is by a packet has no roster at all. The pattern is GameSpice Spectate's, and the reason is the same one: a listen server needs both in one process, which rules out a singleton.
 
 `_order` is a `PackedStringArray` beside the dictionary, and `keys()` returns it. A `Dictionary`'s iteration order is an implementation detail, and two machines iterating one differently produce scoreboards that disagree about who is first, which reads as a sorting bug in the UI rather than as this.
 
@@ -43,20 +43,20 @@ A component that read `player_key` in `_ready` reads an empty string and then do
 
 ## Small decisions with reasons
 
-`component(&"DotPlayerComponent")` looks up **by class name**, walking the script chain, rather than by type. dot-player cannot import dot-weapon or dot-player-controller (it is the base they depend on, not the other way round), so a name is the only thing it can match on.
+`component(&"DotPlayerComponent")` looks up **by class name**, walking the script chain, rather than by type. GameSpice Player cannot import GameSpice Weapon or GameSpice Player Controller (it is the base they depend on, not the other way round), so a name is the only thing it can match on.
 
 `_gather_components` does not descend past a nested `DotPlayer`. A player node inside another one is a vehicle passenger or a character preview, and its components are not this player's.
 
 `key_of_peer` is a linear scan. A reverse index is a second copy of the truth, and the one place it would help is already doing more work per packet than this.
 
-`spawn_team()` is named for its caller: dot-spawn's areas duck-type `spawn_team` on whatever entered them, and having the player node answer it saves a two-line adapter on every body in every game.
+`spawn_team()` is named for its caller: GameSpice Spawn's areas duck-type `spawn_team` on whatever entered them, and having the player node answer it saves a two-line adapter on every body in every game.
 
 `world_position()` returns a `Vector3` in both dimensions, with Z unused in 2D. Every consumer (spawn danger scoring, a spectator camera, a HUD compass) otherwise needs its own branch, and one of them gets it wrong.
 
 ## Names are cleaned, never refused
 
-A display name is trimmed and truncated to `max_name_length`. Duplicates are allowed by default; with `allow_duplicate_names` off the roster appends " (2)" rather than refusing, because refusing tells somebody their name is taken, possibly by a held seat of a player who left ten minutes ago. Identity rules beyond that are dot-user's.
+A display name is trimmed and truncated to `max_name_length`. Duplicates are allowed by default; with `allow_duplicate_names` off the roster appends " (2)" rather than refusing, because refusing tells somebody their name is taken, possibly by a held seat of a player who left ten minutes ago. Identity rules beyond that are GameSpice User's.
 
 ## What this does not do
 
-It does not spawn, move, render, animate or damage anything. It does not talk to a transport: `to_wire` / `apply_wire` produce and consume dictionaries, and dot-net or a game's own bridge carries them.
+It does not spawn, move, render, animate or damage anything. It does not talk to a transport: `to_wire` / `apply_wire` produce and consume dictionaries, and GameSpice Net or a game's own bridge carries them.

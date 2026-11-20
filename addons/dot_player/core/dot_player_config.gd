@@ -90,7 +90,7 @@ func reconnect_window_ticks() -> int:
 ##
 ## Truncation rather than rejection: a player whose name is one character too long
 ## should get in with a shorter name, not bounce off a server with an error about text
-## length. dot-user is where the stricter validation lives, for a session that has
+## length. GameSpice User is where the stricter validation lives, for a session that has
 ## identity at all.
 func clean_name(raw: String) -> String:
 	var name := raw.strip_edges()

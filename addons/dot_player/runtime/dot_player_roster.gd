@@ -4,8 +4,8 @@ extends Node
 ## Who is in the session, authoritatively on one machine and mirrored on the rest.
 ##
 ## [b]One roster, and everything else reads it.[/b] Before this existed, a team lived in
-## dot-match, a class lived in dot-loadout, an alive flag lived in dot-spectate and a key
-## lived in dot-stats — four dictionaries keyed the same way, updated from four places,
+## GameSpice Match, a class lived in GameSpice Loadout, an alive flag lived in GameSpice Spectate and a key
+## lived in GameSpice Stats — four dictionaries keyed the same way, updated from four places,
 ## and disagreeing about a player who reconnected. This is the row they all read.
 ##
 ## [b]And it is a [Node] with an [member authoritative] flag, not a singleton.[/b] A

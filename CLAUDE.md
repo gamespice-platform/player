@@ -1,10 +1,10 @@
-# dot-player
+# GameSpice Player
 
 Who is in the session, and what represents them while they are in the world. `DotPlayerRoster` holds exactly one `DotPlayerRecord` per participant (authoritative on one machine, mirrored on the rest); `DotPlayer` is a plain `Node` container in the world, and `DotPlayerComponent` is the base every other player addon extends.
 
 Read the family [CLAUDE.md](../../CLAUDE.md) first.
 
-**The distributable is `addons/dot_player/`.** It requires [dot-core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored).
+**The distributable is `addons/dot_player/`.** It requires [GameSpice Core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored).
 
 ## Read before
 

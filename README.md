@@ -41,7 +41,7 @@ A dropped connection keeps the player's seat. Calling `join` with the same key i
 
 ## Settings
 
-All in `DotPlayerConfig`, layered like every dot-core config (defaults, JSON file, environment, command line).
+All in `DotPlayerConfig`, layered like every GameSpice Core config (defaults, JSON file, environment, command line).
 
 | Setting | Default | Meaning |
 | --- | --- | --- |

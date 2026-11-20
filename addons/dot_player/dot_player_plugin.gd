@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-## Editor entry point for dot-player. Registers inspector types only.
+## Editor entry point for GameSpice Player. Registers inspector types only.
 ##
 ## No autoloads: a listen server holds an authoritative roster and the client half of
 ## the same process holds a mirror, which is precisely the pair an autoload forbids.

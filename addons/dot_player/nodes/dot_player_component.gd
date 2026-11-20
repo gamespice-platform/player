@@ -167,7 +167,7 @@ func _on_unbound(_p: DotPlayer) -> void:
 ##
 ## [b]There is deliberately no [code]describe()[/code] on this base.[/b] The family's
 ## convention is that anything stateful has one, and it is not uniform about the return
-## type — dot-spectate's manager and dot-player-controller's controller both answer a
+## type — GameSpice Spectate's manager and GameSpice Player Controller's controller both answer a
 ## [Dictionary], while most answer a [String]. A base class that fixed the type would
 ## make every one of those subclasses a parse error, reported against the file that
 ## uses it rather than the file that declares it. [method describe_lines] is the part
