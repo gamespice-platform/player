@@ -1,3 +1,5 @@
+[![dot-player - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/248-dot-player)
+
 One shared record per player, so team, class, alive state and stats stop living in four separate dictionaries that disagree after a reconnect.
 
 `DotPlayerRoster` holds the rows. `DotPlayer` is the node that represents a player in the scene. `DotPlayerComponent` is the base class other player addons extend.
