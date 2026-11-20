@@ -1,4 +1,4 @@
-[![Player - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/248-dot-player)
+[![Player - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/37-gs-player)
 
 One shared record per player, so team, class, alive state and stats stop living in four separate dictionaries that disagree after a reconnect.
 
