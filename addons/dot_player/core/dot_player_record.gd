@@ -1,11 +1,11 @@
-class_name DotPlayerRecord
+class_name GSPlayerRecord
 extends RefCounted
 
 ## One row in the roster: everything the session knows about one participant.
 ##
 ## [b]A record outlives the node, the body, the round and — for a while — the
 ## connection.[/b] That is the whole reason it exists as a separate thing from
-## [DotPlayer]: a player node is destroyed on death, rebuilt on respawn and absent
+## [GSPlayer]: a player node is destroyed on death, rebuilt on respawn and absent
 ## entirely on a client that cannot see them, while their score, their side and their
 ## chosen class have to survive all three.
 ##
@@ -61,8 +61,8 @@ var death_count: int = 0
 var meta: Dictionary = {}
 
 
-static func make(p_key: String, p_name: String = "", p_peer: int = 0) -> DotPlayerRecord:
-	var r := DotPlayerRecord.new()
+static func make(p_key: String, p_name: String = "", p_peer: int = 0) -> GSPlayerRecord:
+	var r := GSPlayerRecord.new()
 	r.key = p_key
 	r.display_name = p_name if p_name != "" else p_key
 	r.peer_id = p_peer
@@ -108,8 +108,8 @@ func to_dict() -> Dictionary:
 ## Tolerant on purpose: a client on an older build receiving a field it does not know
 ## about, or missing one the server has since added, should render a slightly stale
 ## scoreboard rather than refuse to render one.
-static func from_dict(d: Dictionary) -> DotPlayerRecord:
-	var r := DotPlayerRecord.new()
+static func from_dict(d: Dictionary) -> GSPlayerRecord:
+	var r := GSPlayerRecord.new()
 	r.key = str(d.get("key", ""))
 	r.display_name = str(d.get("name", r.key))
 	r.peer_id = int(d.get("peer", 0))
@@ -129,8 +129,8 @@ static func from_dict(d: Dictionary) -> DotPlayerRecord:
 	return r
 
 
-func copy_record() -> DotPlayerRecord:
-	return DotPlayerRecord.from_dict(to_dict())
+func copy_record() -> GSPlayerRecord:
+	return GSPlayerRecord.from_dict(to_dict())
 
 
 func describe() -> String:
@@ -145,4 +145,4 @@ func describe() -> String:
 
 
 func _to_string() -> String:
-	return "DotPlayerRecord(%s)" % describe()
+	return "GSPlayerRecord(%s)" % describe()

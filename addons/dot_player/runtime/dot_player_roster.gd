@@ -1,4 +1,4 @@
-class_name DotPlayerRoster
+class_name GSPlayerRoster
 extends Node
 
 ## Who is in the session, authoritatively on one machine and mirrored on the rest.
@@ -15,8 +15,8 @@ extends Node
 ## itself to a team is a client that will.
 ##
 ## [codeblock]
-## var roster := DotPlayerRoster.new()
-## roster.config = DotPlayerConfig.new()
+## var roster := GSPlayerRoster.new()
+## roster.config = GSPlayerConfig.new()
 ## add_child(roster)
 ##
 ## roster.join("ada", "Ada", peer_id, tick)
@@ -33,10 +33,10 @@ const CHANNEL := "player.roster"
 const SERVICE := &"dot_player_roster"
 
 ## Somebody joined for the first time.
-signal joined(record: DotPlayerRecord)
+signal joined(record: GSPlayerRecord)
 
 ## Somebody came back inside the reconnect window, with everything they had.
-signal rejoined(record: DotPlayerRecord)
+signal rejoined(record: GSPlayerRecord)
 
 ## Somebody's connection dropped. Their seat is held; see [signal removed].
 signal disconnected(key: String, tick: int)
@@ -53,12 +53,12 @@ signal alive_changed(key: String, alive: bool)
 ## Whether this instance decides, or is told.
 ##
 ## The server's is true; every mirror's is false, and every mutator on a mirror is
-## refused with [constant DotError.CODE_FORBIDDEN].
+## refused with [constant GSError.CODE_FORBIDDEN].
 @export var authoritative: bool = true
 
-@export var config: DotPlayerConfig = null
+@export var config: GSPlayerConfig = null
 
-## Whether to register in [DotRegistry] under [constant SERVICE].
+## Whether to register in [GSRegistry] under [constant SERVICE].
 @export var register_service: bool = true
 
 var _records: Dictionary = {}
@@ -73,32 +73,32 @@ var _order: PackedStringArray = PackedStringArray()
 
 func _ready() -> void:
 	if config == null:
-		config = DotPlayerConfig.new()
+		config = GSPlayerConfig.new()
 
 	if register_service and authoritative:
-		DotRegistry.register(SERVICE, self)
+		GSRegistry.register(SERVICE, self)
 
 
 # --- Membership -------------------------------------------------------------
 
 ## Adds somebody, or brings back a held seat.
 ##
-## Returns the [DotPlayerRecord] on success. Refuses a full session with
-## [constant DotError.CODE_QUOTA], which a server turns into a connect refusal a client
+## Returns the [GSPlayerRecord] on success. Refuses a full session with
+## [constant GSError.CODE_QUOTA], which a server turns into a connect refusal a client
 ## can actually display.
-func join(key: String, display_name: String = "", peer_id: int = 0, tick: int = 0) -> DotResult:
+func join(key: String, display_name: String = "", peer_id: int = 0, tick: int = 0) -> GSResult:
 	if not authoritative:
 		return _refuse_mirror("join")
 
 	if key == "":
-		return DotResult.fail(DotError.CODE_INVALID, "A player with no key cannot be filed.")
+		return GSResult.fail(GSError.CODE_INVALID, "A player with no key cannot be filed.")
 
 	if _records.has(key):
-		var existing: DotPlayerRecord = _records[key]
+		var existing: GSPlayerRecord = _records[key]
 
 		if existing.connected():
-			return DotResult.fail(
-				DotError.CODE_STATE,
+			return GSResult.fail(
+				GSError.CODE_STATE,
 				"'%s' is already in the session." % key,
 				"A second join for a connected key is a bug in the caller, not a "
 				+ "reconnect — a reconnect arrives after a drop."
@@ -119,16 +119,16 @@ func join(key: String, display_name: String = "", peer_id: int = 0, tick: int = 
 			existing.spawn_count = 0
 			existing.death_count = 0
 
-		DotLog.info(CHANNEL, "rejoined", {"key": key, "peer": peer_id})
+		GSLog.info(CHANNEL, "rejoined", {"key": key, "peer": peer_id})
 		rejoined.emit(existing)
-		return DotResult.success(existing)
+		return GSResult.success(existing)
 
 	var full := _capacity_refusal(false)
 
 	if full != null:
-		return DotResult.failure(full)
+		return GSResult.failure(full)
 
-	var record := DotPlayerRecord.make(key, _unique_name(display_name, key), peer_id)
+	var record := GSPlayerRecord.make(key, _unique_name(display_name, key), peer_id)
 	record.joined_tick = tick
 	record.reconnected_tick = tick
 	record.team = config.default_team
@@ -137,25 +137,25 @@ func join(key: String, display_name: String = "", peer_id: int = 0, tick: int = 
 	_records[key] = record
 	_order.append(key)
 
-	DotLog.info(CHANNEL, "joined", {"key": key, "name": record.display_name, "peer": peer_id})
+	GSLog.info(CHANNEL, "joined", {"key": key, "name": record.display_name, "peer": peer_id})
 	joined.emit(record)
-	return DotResult.success(record)
+	return GSResult.success(record)
 
 
 ## Adds a bot. Same record, counted against its own cap.
-func join_bot(key: String, display_name: String = "", tick: int = 0) -> DotResult:
+func join_bot(key: String, display_name: String = "", tick: int = 0) -> GSResult:
 	if not authoritative:
 		return _refuse_mirror("join_bot")
 
 	var full := _capacity_refusal(true)
 
 	if full != null:
-		return DotResult.failure(full)
+		return GSResult.failure(full)
 
 	var res := join(key, display_name, 0, tick)
 
 	if res.ok:
-		(res.value as DotPlayerRecord).bot = true
+		(res.value as GSPlayerRecord).bot = true
 		changed.emit(key, &"bot")
 
 	return res
@@ -166,34 +166,34 @@ func join_bot(key: String, display_name: String = "", tick: int = 0) -> DotResul
 ## [b]Not the same as leaving.[/b] A player whose connection hiccups mid-round and comes
 ## back to an empty scoreboard has, from their side, been punished for their router.
 ## Zero-second windows collapse this into [method remove] and a lobby wants that.
-func note_disconnected(key: String, tick: int = 0) -> DotResult:
+func note_disconnected(key: String, tick: int = 0) -> GSResult:
 	if not authoritative:
 		return _refuse_mirror("note_disconnected")
 
 	if not _records.has(key):
-		return DotResult.fail(DotError.CODE_INVALID, "No such player: '%s'." % key)
+		return GSResult.fail(GSError.CODE_INVALID, "No such player: '%s'." % key)
 
 	if config.reconnect_window_ticks() <= 0:
 		return remove(key, &"disconnected")
 
-	var record: DotPlayerRecord = _records[key]
+	var record: GSPlayerRecord = _records[key]
 	record.disconnected_tick = tick
 	record.peer_id = 0
 	record.alive = false
 
-	DotLog.info(CHANNEL, "disconnected", {"key": key, "tick": tick})
+	GSLog.info(CHANNEL, "disconnected", {"key": key, "tick": tick})
 	disconnected.emit(key, tick)
 	alive_changed.emit(key, false)
-	return DotResult.success(record)
+	return GSResult.success(record)
 
 
 ## Drops a record entirely.
-func remove(key: String, reason: StringName = &"left") -> DotResult:
+func remove(key: String, reason: StringName = &"left") -> GSResult:
 	if not authoritative:
 		return _refuse_mirror("remove")
 
 	if not _records.has(key):
-		return DotResult.fail(DotError.CODE_INVALID, "No such player: '%s'." % key)
+		return GSResult.fail(GSError.CODE_INVALID, "No such player: '%s'." % key)
 
 	_records.erase(key)
 
@@ -201,15 +201,15 @@ func remove(key: String, reason: StringName = &"left") -> DotResult:
 	if index >= 0:
 		_order.remove_at(index)
 
-	DotLog.info(CHANNEL, "removed", {"key": key, "reason": String(reason)})
+	GSLog.info(CHANNEL, "removed", {"key": key, "reason": String(reason)})
 	removed.emit(key, reason)
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## Drops every held seat whose window has expired. Call once a tick, or once a second.
 ##
 ## Returns the keys it dropped. Necessary for the same reason
-## [code]DotSpawnProtection.advance[/code] is: a window that is only ever checked when
+## [code]GSSpawnProtection.advance[/code] is: a window that is only ever checked when
 ## somebody tries to rejoin is a window that never expires, and the roster grows for the
 ## whole uptime of the server.
 func advance(tick: int) -> PackedStringArray:
@@ -220,7 +220,7 @@ func advance(tick: int) -> PackedStringArray:
 		return dropped
 
 	for key: Variant in _records.keys():
-		var record: DotPlayerRecord = _records[key]
+		var record: GSPlayerRecord = _records[key]
 
 		if record.connected():
 			continue
@@ -238,19 +238,19 @@ func advance(tick: int) -> PackedStringArray:
 
 # --- Fields -----------------------------------------------------------------
 
-func set_team(key: String, team: StringName) -> DotResult:
+func set_team(key: String, team: StringName) -> GSResult:
 	return _set_field(key, &"team", team)
 
 
-func set_class(key: String, player_class: StringName) -> DotResult:
+func set_class(key: String, player_class: StringName) -> GSResult:
 	return _set_field(key, &"player_class", player_class)
 
 
-func set_char(key: String, char_id: StringName) -> DotResult:
+func set_char(key: String, char_id: StringName) -> GSResult:
 	return _set_field(key, &"char_id", char_id)
 
 
-func set_display_name(key: String, display_name: String) -> DotResult:
+func set_display_name(key: String, display_name: String) -> GSResult:
 	return _set_field(key, &"display_name", _unique_name(display_name, key))
 
 
@@ -289,27 +289,27 @@ func _name_taken(name: String, except_key: String) -> bool:
 		if other == except_key:
 			continue
 
-		if (_records[other] as DotPlayerRecord).display_name == name:
+		if (_records[other] as GSPlayerRecord).display_name == name:
 			return true
 
 	return false
 
 
-func set_meta_value(key: String, field: String, value: Variant) -> DotResult:
+func set_meta_value(key: String, field: String, value: Variant) -> GSResult:
 	if not authoritative:
 		return _refuse_mirror("set_meta_value")
 
 	var record := get_record(key)
 
 	if record == null:
-		return DotResult.fail(DotError.CODE_INVALID, "No such player: '%s'." % key)
+		return GSResult.fail(GSError.CODE_INVALID, "No such player: '%s'." % key)
 
-	if DotValue.same(record.meta.get(field, null), value):
-		return DotResult.success(record)
+	if GSValue.same(record.meta.get(field, null), value):
+		return GSResult.success(record)
 
 	record.meta[field] = value
 	changed.emit(key, StringName(field))
-	return DotResult.success(record)
+	return GSResult.success(record)
 
 
 ## Marks somebody as in or out of the world, counting spawns and deaths.
@@ -317,17 +317,17 @@ func set_meta_value(key: String, field: String, value: Variant) -> DotResult:
 ## The counters are here rather than in the caller because every caller would otherwise
 ## keep its own, and two of them would disagree about a player who was killed by a
 ## trigger rather than by a person.
-func set_alive(key: String, alive: bool) -> DotResult:
+func set_alive(key: String, alive: bool) -> GSResult:
 	if not authoritative:
 		return _refuse_mirror("set_alive")
 
 	var record := get_record(key)
 
 	if record == null:
-		return DotResult.fail(DotError.CODE_INVALID, "No such player: '%s'." % key)
+		return GSResult.fail(GSError.CODE_INVALID, "No such player: '%s'." % key)
 
 	if record.alive == alive:
-		return DotResult.success(record)
+		return GSResult.success(record)
 
 	record.alive = alive
 
@@ -338,7 +338,7 @@ func set_alive(key: String, alive: bool) -> DotResult:
 
 	alive_changed.emit(key, alive)
 	changed.emit(key, &"alive")
-	return DotResult.success(record)
+	return GSResult.success(record)
 
 
 # --- Reading ----------------------------------------------------------------
@@ -347,7 +347,7 @@ func has_player(key: String) -> bool:
 	return _records.has(key)
 
 
-func get_record(key: String) -> DotPlayerRecord:
+func get_record(key: String) -> GSPlayerRecord:
 	return _records.get(key, null)
 
 
@@ -356,8 +356,8 @@ func keys() -> PackedStringArray:
 	return _order.duplicate()
 
 
-func records() -> Array[DotPlayerRecord]:
-	var out: Array[DotPlayerRecord] = []
+func records() -> Array[GSPlayerRecord]:
+	var out: Array[GSPlayerRecord] = []
 
 	for key in _order:
 		out.append(_records[key])
@@ -404,7 +404,7 @@ func team_keys(team: StringName) -> PackedStringArray:
 	var out := PackedStringArray()
 
 	for key in _order:
-		if (_records[key] as DotPlayerRecord).team == team:
+		if (_records[key] as GSPlayerRecord).team == team:
 			out.append(key)
 
 	return out
@@ -414,7 +414,7 @@ func alive_keys() -> PackedStringArray:
 	var out := PackedStringArray()
 
 	for key in _order:
-		if (_records[key] as DotPlayerRecord).alive:
+		if (_records[key] as GSPlayerRecord).alive:
 			out.append(key)
 
 	return out
@@ -430,7 +430,7 @@ func key_of_peer(peer_id: int) -> String:
 		return ""
 
 	for key in _order:
-		if (_records[key] as DotPlayerRecord).peer_id == peer_id:
+		if (_records[key] as GSPlayerRecord).peer_id == peer_id:
 			return key
 
 	return ""
@@ -462,10 +462,10 @@ func row_to_wire(key: String) -> Dictionary:
 ##
 ## Refused on an authoritative roster. A server that can be told what its own roster is
 ## by a packet is a server with no roster at all.
-func apply_wire(payload: Dictionary) -> DotResult:
+func apply_wire(payload: Dictionary) -> GSResult:
 	if authoritative:
-		return DotResult.fail(
-			DotError.CODE_FORBIDDEN,
+		return GSResult.fail(
+			GSError.CODE_FORBIDDEN,
 			"An authoritative roster is not told what it contains.",
 			"Set authoritative = false on the mirror, or stop sending it wire updates."
 		)
@@ -473,7 +473,7 @@ func apply_wire(payload: Dictionary) -> DotResult:
 	var rows: Variant = payload.get("players", [])
 
 	if not (rows is Array):
-		return DotResult.fail(DotError.CODE_PARSE, "A roster payload has no player list.")
+		return GSResult.fail(GSError.CODE_PARSE, "A roster payload has no player list.")
 
 	_records.clear()
 	_order = PackedStringArray()
@@ -482,7 +482,7 @@ func apply_wire(payload: Dictionary) -> DotResult:
 		if not (row is Dictionary):
 			continue
 
-		var record := DotPlayerRecord.from_dict(row as Dictionary)
+		var record := GSPlayerRecord.from_dict(row as Dictionary)
 
 		if record.key == "":
 			continue
@@ -490,23 +490,23 @@ func apply_wire(payload: Dictionary) -> DotResult:
 		_records[record.key] = record
 		_order.append(record.key)
 
-	return DotResult.success(_records.size())
+	return GSResult.success(_records.size())
 
 
 ## Applies one changed row to a mirror, adding it if it is new.
-func apply_row(row: Dictionary) -> DotResult:
+func apply_row(row: Dictionary) -> GSResult:
 	if authoritative:
-		return DotResult.fail(
-			DotError.CODE_FORBIDDEN, "An authoritative roster is not told what it contains."
+		return GSResult.fail(
+			GSError.CODE_FORBIDDEN, "An authoritative roster is not told what it contains."
 		)
 
-	var record := DotPlayerRecord.from_dict(row)
+	var record := GSPlayerRecord.from_dict(row)
 
 	if record.key == "":
-		return DotResult.fail(DotError.CODE_PARSE, "A roster row has no key.")
+		return GSResult.fail(GSError.CODE_PARSE, "A roster row has no key.")
 
 	var existed := _records.has(record.key)
-	var was_alive := existed and (_records[record.key] as DotPlayerRecord).alive
+	var was_alive := existed and (_records[record.key] as GSPlayerRecord).alive
 
 	_records[record.key] = record
 
@@ -519,18 +519,18 @@ func apply_row(row: Dictionary) -> DotResult:
 	if was_alive != record.alive:
 		alive_changed.emit(record.key, record.alive)
 
-	return DotResult.success(record)
+	return GSResult.success(record)
 
 
 ## Removes a row on a mirror.
-func drop_row(key: String) -> DotResult:
+func drop_row(key: String) -> GSResult:
 	if authoritative:
-		return DotResult.fail(
-			DotError.CODE_FORBIDDEN, "An authoritative roster is not told what it contains."
+		return GSResult.fail(
+			GSError.CODE_FORBIDDEN, "An authoritative roster is not told what it contains."
 		)
 
 	if not _records.has(key):
-		return DotResult.success(null)
+		return GSResult.success(null)
 
 	_records.erase(key)
 
@@ -539,7 +539,7 @@ func drop_row(key: String) -> DotResult:
 		_order.remove_at(index)
 
 	removed.emit(key, &"mirrored")
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func clear() -> void:
@@ -563,37 +563,37 @@ func describe_lines() -> PackedStringArray:
 
 
 func describe() -> String:
-	return "DotPlayerRoster(%d players%s)" % [
+	return "GSPlayerRoster(%d players%s)" % [
 		count(), "" if authoritative else ", mirror"
 	]
 
 
 # --- Internals --------------------------------------------------------------
 
-func _set_field(key: String, field: StringName, value: Variant) -> DotResult:
+func _set_field(key: String, field: StringName, value: Variant) -> GSResult:
 	if not authoritative:
 		return _refuse_mirror(String(field))
 
 	var record := get_record(key)
 
 	if record == null:
-		return DotResult.fail(DotError.CODE_INVALID, "No such player: '%s'." % key)
+		return GSResult.fail(GSError.CODE_INVALID, "No such player: '%s'." % key)
 
-	# DotValue rather than ==: the incoming value comes from a console command, a wire
+	# GSValue rather than ==: the incoming value comes from a console command, a wire
 	# message or a menu, so its Variant type is not under this file's control, and == on
 	# mismatched types is a runtime error that abandons the expression and leaves the
 	# caller with an undefined condition.
-	if DotValue.same(record.get(String(field)), value):
-		return DotResult.success(record)
+	if GSValue.same(record.get(String(field)), value):
+		return GSResult.success(record)
 
 	record.set(String(field), value)
 	changed.emit(key, field)
-	return DotResult.success(record)
+	return GSResult.success(record)
 
 
-func _refuse_mirror(what: String) -> DotResult:
-	return DotResult.fail(
-		DotError.CODE_FORBIDDEN,
+func _refuse_mirror(what: String) -> GSResult:
+	return GSResult.fail(
+		GSError.CODE_FORBIDDEN,
 		"A mirrored roster decides nothing; it is told. ('%s')" % what,
 		"This instance has authoritative = false. The server's roster is the one that "
 		+ "decides, and a client that can quietly assign itself to a team is a client "
@@ -601,11 +601,11 @@ func _refuse_mirror(what: String) -> DotResult:
 	)
 
 
-## Null when there is room, a [DotError] when there is not.
-func _capacity_refusal(for_bot: bool) -> DotError:
+## Null when there is room, a [GSError] when there is not.
+func _capacity_refusal(for_bot: bool) -> GSError:
 	if for_bot and config.max_bots > 0 and bot_count() >= config.max_bots:
-		return DotError.make(
-			DotError.CODE_QUOTA,
+		return GSError.make(
+			GSError.CODE_QUOTA,
 			"There is room for %d bots and there are already that many." % config.max_bots
 		)
 
@@ -621,8 +621,8 @@ func _capacity_refusal(for_bot: bool) -> DotError:
 	if occupied < config.max_players:
 		return null
 
-	return DotError.make(
-		DotError.CODE_QUOTA,
+	return GSError.make(
+		GSError.CODE_QUOTA,
 		"The session is full (%d of %d)." % [occupied, config.max_players],
 		"Held seats count towards this by default: freeing a slot the moment a "
 		+ "connection hiccups lets a stranger take the place of the player who is "

@@ -6,9 +6,9 @@ Why the addon is shaped the way it is. The one-line rules are in [CLAUDE.md](../
 
 **There is exactly one row per participant, and everything else reads it.**
 
-This addon exists because there were four. A team lived in GameSpice Match, a class in GameSpice Loadout, an alive flag in GameSpice Spectate and a key in GameSpice Stats: four dictionaries keyed the same way, written from four places, and guaranteed to disagree about anybody who reconnected. `DotPlayerRecord` is the row; `DotPlayerRoster` owns it; nothing else should keep a parallel dictionary keyed by player.
+This addon exists because there were four. A team lived in GameSpice Match, a class in GameSpice Loadout, an alive flag in GameSpice Spectate and a key in GameSpice Stats: four dictionaries keyed the same way, written from four places, and guaranteed to disagree about anybody who reconnected. `GSPlayerRecord` is the row; `GSPlayerRoster` owns it; nothing else should keep a parallel dictionary keyed by player.
 
-The second idea shapes the nodes: **a player node is a container, not a character.** `DotPlayer extends Node`. The moment it extends a body it has chosen a dimension, and this family ships 2D and 3D games, and it has chosen a physics model, when a spectator, a dead player and a passenger in a vehicle are all participants with no body of their own.
+The second idea shapes the nodes: **a player node is a container, not a character.** `GSPlayer extends Node`. The moment it extends a body it has chosen a dimension, and this family ships 2D and 3D games, and it has chosen a physics model, when a spectator, a dead player and a passenger in a vehicle are all participants with no body of their own.
 
 ## A drop is not a departure, and the difference is load-bearing
 
@@ -19,7 +19,7 @@ Two details that look like details and are not:
 - **The original `joined_tick` survives.** "Time in the session" is then still true, which is what a session-length statistic and an idle-kick both read.
 - **A held seat counts towards `max_players`** (`reserved_seats_count`, on by default). Freeing it immediately is how a full server lets a stranger take the slot of the player reconnecting into it.
 
-`advance(tick)` is what actually expires a window. A window only checked when somebody tries to rejoin is a window that never expires, and the roster then grows for the whole uptime of the server: the same shape as `DotSpawnProtection.advance` and as the unbounded recorder in [bugs-found.md](../../../docs/bugs-found.md).
+`advance(tick)` is what actually expires a window. A window only checked when somebody tries to rejoin is a window that never expires, and the roster then grows for the whole uptime of the server: the same shape as `GSSpawnProtection.advance` and as the unbounded recorder in [bugs-found.md](../../../docs/bugs-found.md).
 
 ## `authoritative` is a flag, not a second class
 
@@ -43,9 +43,9 @@ A component that read `player_key` in `_ready` reads an empty string and then do
 
 ## Small decisions with reasons
 
-`component(&"DotPlayerComponent")` looks up **by class name**, walking the script chain, rather than by type. GameSpice Player cannot import GameSpice Weapon or GameSpice Player Controller (it is the base they depend on, not the other way round), so a name is the only thing it can match on.
+`component(&"GSPlayerComponent")` looks up **by class name**, walking the script chain, rather than by type. GameSpice Player cannot import GameSpice Weapon or GameSpice Player Controller (it is the base they depend on, not the other way round), so a name is the only thing it can match on.
 
-`_gather_components` does not descend past a nested `DotPlayer`. A player node inside another one is a vehicle passenger or a character preview, and its components are not this player's.
+`_gather_components` does not descend past a nested `GSPlayer`. A player node inside another one is a vehicle passenger or a character preview, and its components are not this player's.
 
 `key_of_peer` is a linear scan. A reverse index is a second copy of the truth, and the one place it would help is already doing more work per packet than this.
 

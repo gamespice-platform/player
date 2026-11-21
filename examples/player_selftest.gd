@@ -23,7 +23,7 @@ var _section_count := 0
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run()
 
 
@@ -59,9 +59,9 @@ func _run() -> void:
 	get_tree().quit(1 if _failed > 0 else 0)
 
 
-func _roster(cfg: DotPlayerConfig = null) -> DotPlayerRoster:
-	var r := DotPlayerRoster.new()
-	r.config = cfg if cfg != null else DotPlayerConfig.new()
+func _roster(cfg: GSPlayerConfig = null) -> GSPlayerRoster:
+	var r := GSPlayerRoster.new()
+	r.config = cfg if cfg != null else GSPlayerConfig.new()
 	r.config.tick_rate = RATE
 	r.register_service = false
 	add_child(r)
@@ -73,7 +73,7 @@ func _roster(cfg: DotPlayerConfig = null) -> DotPlayerRoster:
 func _test_record() -> void:
 	_section("a record")
 
-	var r := DotPlayerRecord.make("ada", "Ada", 7)
+	var r := GSPlayerRecord.make("ada", "Ada", 7)
 	_check(r.key == "ada", "carries a stable key")
 	_check(r.display_name == "Ada", "and a name")
 	_check(r.peer_id == 7, "and the peer it arrived on")
@@ -81,7 +81,7 @@ func _test_record() -> void:
 	_check(not r.assigned(), "and unassigned, which is not the same as spectator")
 	_check(not r.alive, "and out of the world")
 
-	var blank := DotPlayerRecord.make("bob")
+	var blank := GSPlayerRecord.make("bob")
 	_check(
 		blank.display_name == "bob",
 		"a record with no name shows its key rather than an empty string, because an "
@@ -94,19 +94,19 @@ func _test_record() -> void:
 	r.meta = {"ping": 42}
 
 	var wire := r.to_dict()
-	var back := DotPlayerRecord.from_dict(wire)
+	var back := GSPlayerRecord.from_dict(wire)
 	_check(back.key == "ada" and back.team == &"blue", "a record survives a round trip")
 	_check(back.player_class == &"medic", "with its class")
 	_check(back.spawn_count == 3, "and its counters")
 	_check(int(back.meta.get("ping", 0)) == 42, "and its metadata")
 
-	var partial := DotPlayerRecord.from_dict({"key": "zoe"})
+	var partial := GSPlayerRecord.from_dict({"key": "zoe"})
 	_check(
 		partial.key == "zoe" and partial.team == &"",
 		"a payload missing fields keeps defaults — a client on an older build should "
 		+ "render a stale scoreboard, not refuse to render one"
 	)
-	_check(DotPlayerRecord.from_dict({}).key == "", "and an empty one is empty")
+	_check(GSPlayerRecord.from_dict({}).key == "", "and an empty one is empty")
 
 	var copy := r.copy_record()
 	copy.team = &"red"
@@ -120,7 +120,7 @@ func _test_record() -> void:
 func _test_config() -> void:
 	_section("config")
 
-	var c := DotPlayerConfig.new()
+	var c := GSPlayerConfig.new()
 	_check(c.validate().ok, "the defaults validate")
 	_check(c.reconnect_window_ticks() == 60 * 60, "sixty seconds at 60 Hz is 3600 ticks")
 	_check(
@@ -138,7 +138,7 @@ func _test_config() -> void:
 		+ "over text length is worse than shortening it"
 	)
 
-	var bad := DotPlayerConfig.new()
+	var bad := GSPlayerConfig.new()
 	bad.max_players = 4
 	bad.max_bots = 8
 	_check(
@@ -165,14 +165,14 @@ func _test_join_and_leave() -> void:
 
 	var roster := _roster()
 	var events: Array = []
-	roster.joined.connect(func(rec: DotPlayerRecord) -> void: events.append(["join", rec.key]))
+	roster.joined.connect(func(rec: GSPlayerRecord) -> void: events.append(["join", rec.key]))
 	roster.removed.connect(func(key: String, why: StringName) -> void:
 		events.append(["remove", key, String(why)])
 	)
 
 	var res := roster.join("ada", "Ada", 7, 100)
 	_check(res.ok, "somebody joins")
-	_check((res.value as DotPlayerRecord).joined_tick == 100, "on a tick")
+	_check((res.value as GSPlayerRecord).joined_tick == 100, "on a tick")
 	_check(roster.has_player("ada"), "and is in the roster")
 	_check(roster.count() == 1, "which counts them")
 	_check(roster.connected_count() == 1, "as connected")
@@ -180,7 +180,7 @@ func _test_join_and_leave() -> void:
 
 	_check(not roster.join("ada", "Ada", 8, 101).ok, "joining twice is refused")
 	_check(
-		roster.join("ada", "Ada", 8, 101).code() == DotError.CODE_STATE,
+		roster.join("ada", "Ada", 8, 101).code() == GSError.CODE_STATE,
 		"as a state error, because a second join for a connected key is a caller bug "
 		+ "rather than a reconnect"
 	)
@@ -210,14 +210,14 @@ func _test_join_and_leave() -> void:
 	_check(roster.describe_lines().size() == 3, "and the roster describes itself")
 
 	# The setting that used to be declared and read by nothing.
-	var strict := DotPlayerConfig.new()
+	var strict := GSPlayerConfig.new()
 	strict.allow_duplicate_names = false
 	var unique := _roster(strict)
 	var first := unique.join("a", "Ada")
 	var second := unique.join("b", "Ada")
 	_check(first.ok and second.ok, "a server forbidding duplicates still lets both in")
 	_check(
-		(second.value as DotPlayerRecord).display_name == "Ada (2)",
+		(second.value as GSPlayerRecord).display_name == "Ada (2)",
 		"and disambiguates rather than refusing, which is the answer every chat system "
 		+ "reached decades ago"
 	)
@@ -242,7 +242,7 @@ func _test_reconnect() -> void:
 	var _a := roster.set_alive("ada", true)
 
 	var rejoins: Array = []
-	roster.rejoined.connect(func(rec: DotPlayerRecord) -> void: rejoins.append(rec.key))
+	roster.rejoined.connect(func(rec: GSPlayerRecord) -> void: rejoins.append(rec.key))
 
 	_check(roster.note_disconnected("ada", 1000).ok, "a connection drops")
 	_check(roster.has_player("ada"), "and the record is held")
@@ -255,16 +255,16 @@ func _test_reconnect() -> void:
 	_check(back.ok, "and they come back")
 	_check(rejoins.size() == 1, "as a rejoin rather than a join")
 	_check(
-		(back.value as DotPlayerRecord).team == &"blue",
+		(back.value as GSPlayerRecord).team == &"blue",
 		"with the team they had — a player whose router hiccups mid-round and returns "
 		+ "to an empty scoreboard has been punished for their hardware"
 	)
-	_check((back.value as DotPlayerRecord).peer_id == 11, "on their new peer")
+	_check((back.value as GSPlayerRecord).peer_id == 11, "on their new peer")
 	_check(
-		(back.value as DotPlayerRecord).joined_tick == 0,
+		(back.value as GSPlayerRecord).joined_tick == 0,
 		"and the original join tick, so 'time in the session' is still true"
 	)
-	_check((back.value as DotPlayerRecord).reconnected_tick == 1100, "with the return noted")
+	_check((back.value as GSPlayerRecord).reconnected_tick == 1100, "with the return noted")
 
 	# The window expiring.
 	var _d := roster.note_disconnected("ada", 2000)
@@ -278,7 +278,7 @@ func _test_reconnect() -> void:
 	_check(not roster.has_player("ada"), "with the record gone")
 
 	# A zero window, which is what a lobby wants.
-	var lobby_cfg := DotPlayerConfig.new()
+	var lobby_cfg := GSPlayerConfig.new()
 	lobby_cfg.reconnect_window_sec = 0.0
 	var lobby := _roster(lobby_cfg)
 	var _lj := lobby.join("bob", "Bob", 3, 0)
@@ -290,7 +290,7 @@ func _test_reconnect() -> void:
 	)
 
 	# Not restoring, for a mode that does not want it.
-	var fresh_cfg := DotPlayerConfig.new()
+	var fresh_cfg := GSPlayerConfig.new()
 	fresh_cfg.restore_on_reconnect = false
 	var fresh := _roster(fresh_cfg)
 	var _fj := fresh.join("mel", "Mel", 5, 0)
@@ -298,7 +298,7 @@ func _test_reconnect() -> void:
 	var _fd := fresh.note_disconnected("mel", 10)
 	var again := fresh.join("mel", "Mel", 6, 20)
 	_check(
-		(again.value as DotPlayerRecord).team == &"",
+		(again.value as GSPlayerRecord).team == &"",
 		"and a mode that would rather start people over can say so"
 	)
 
@@ -310,7 +310,7 @@ func _test_reconnect() -> void:
 func _test_capacity() -> void:
 	_section("capacity")
 
-	var cfg := DotPlayerConfig.new()
+	var cfg := GSPlayerConfig.new()
 	cfg.max_players = 3
 	cfg.max_bots = 1
 	var roster := _roster(cfg)
@@ -323,7 +323,7 @@ func _test_capacity() -> void:
 	var refused := roster.join("d")
 	_check(not refused.ok, "the fourth is refused")
 	_check(
-		refused.code() == DotError.CODE_QUOTA,
+		refused.code() == GSError.CODE_QUOTA,
 		"with a quota code a server can turn into a connect refusal somebody can read"
 	)
 
@@ -345,8 +345,8 @@ func _test_capacity() -> void:
 		"and a game that would rather free it immediately can say so"
 	)
 
-	_check(DotPlayerConfig.new().max_players == 0, "the default is unlimited, not the old 32")
-	var unlimited := DotPlayerConfig.new()
+	_check(GSPlayerConfig.new().max_players == 0, "the default is unlimited, not the old 32")
+	var unlimited := GSPlayerConfig.new()
 	unlimited.max_players = 0
 	var open := _roster(unlimited)
 	for i in range(50):
@@ -410,7 +410,7 @@ func _test_fields() -> void:
 	_check(
 		roster.set_meta_value("ada", "ping", "42").ok,
 		"a string against a number is a change rather than a runtime error, because "
-		+ "DotValue.same is total where == is not"
+		+ "GSValue.same is total where == is not"
 	)
 
 	_check(not roster.set_team("nobody", &"blue").ok, "an unknown key is refused")
@@ -436,7 +436,7 @@ func _test_mirror() -> void:
 	var _b := server.join("bob", "Bob", 8, 0)
 	var _ba := server.set_alive("bob", true)
 
-	var client := DotPlayerRoster.new()
+	var client := GSPlayerRoster.new()
 	client.authoritative = false
 	client.register_service = false
 	add_child(client)
@@ -456,7 +456,7 @@ func _test_mirror() -> void:
 		"a mirror decides nothing: a client that can quietly assign itself to a team "
 		+ "is a client that will"
 	)
-	_check(client.join("mallory").code() == DotError.CODE_FORBIDDEN, "and says so")
+	_check(client.join("mallory").code() == GSError.CODE_FORBIDDEN, "and says so")
 	_check(not client.set_team("ada", &"red").ok, "nor reassign anybody")
 	_check(not client.set_alive("ada", true).ok, "nor resurrect them")
 	_check(not client.remove("ada").ok, "nor remove them")
@@ -474,7 +474,7 @@ func _test_mirror() -> void:
 
 	var _n := server.join("zoe", "Zoe", 9, 0)
 	var joined_on_client: Array = []
-	client.joined.connect(func(rec: DotPlayerRecord) -> void: joined_on_client.append(rec.key))
+	client.joined.connect(func(rec: GSPlayerRecord) -> void: joined_on_client.append(rec.key))
 	var _row := client.apply_row(server.row_to_wire("zoe"))
 	_check(joined_on_client.size() == 1, "a new row arrives as a join on the mirror")
 
@@ -496,8 +496,8 @@ func _test_nodes() -> void:
 	var _j := roster.join("ada", "Ada", 7, 0)
 	var _t := roster.set_team("ada", &"blue")
 
-	var player := DotPlayer.new()
-	player.roster_ref = DotNodeRef.of_path(roster.get_path())
+	var player := GSPlayer.new()
+	player.roster_ref = GSNodeRef.of_path(roster.get_path())
 	player.is_local = true
 	add_child(player)
 
@@ -509,18 +509,18 @@ func _test_nodes() -> void:
 	_check(bound_keys.size() == 1, "with a signal")
 	_check(player.team() == &"blue", "and reads its team through the roster")
 	_check(player.display_name() == "Ada", "and its name")
-	_check(player.is_in_group(DotPlayer.GROUP), "it joins the group of all players")
+	_check(player.is_in_group(GSPlayer.GROUP), "it joins the group of all players")
 	_check(
 		player.is_in_group(&"dot_player_ada"),
 		"and a per-key group, which is how one player is found without a registry name "
 		+ "that two servers in one process would collide on"
 	)
 
-	_check(DotPlayer.of(player) == player, "a node finds itself")
-	_check(DotPlayer.find(get_tree(), "ada") == player, "and is findable by key")
-	_check(DotPlayer.find(get_tree(), "nobody") == null, "an unknown key finds nothing")
-	_check(DotPlayer.all(get_tree()).size() == 1, "and all() lists it")
-	_check(DotPlayer.of(null) == null, "walking up from nothing finds nothing")
+	_check(GSPlayer.of(player) == player, "a node finds itself")
+	_check(GSPlayer.find(get_tree(), "ada") == player, "and is findable by key")
+	_check(GSPlayer.find(get_tree(), "nobody") == null, "an unknown key finds nothing")
+	_check(GSPlayer.all(get_tree()).size() == 1, "and all() lists it")
+	_check(GSPlayer.of(null) == null, "walking up from nothing finds nothing")
 
 	# Rebinding to somebody else, which is what a pooled node does.
 	var _z := roster.join("zoe", "Zoe", 8, 0)
@@ -541,22 +541,22 @@ func _test_nodes() -> void:
 	)
 
 	# Components.
-	var component := DotPlayerComponent.new()
+	var component := GSPlayerComponent.new()
 	player.add_child(component)
 	_check(component.is_bound(), "a component binds by walking up")
 	_check(component.player() == player, "to the right player")
 	_check(component.is_active(), "and is active")
 	_check(player.components().size() == 1, "the player lists it")
 	_check(
-		player.component(&"DotPlayerComponent") == component,
+		player.component(&"GSPlayerComponent") == component,
 		"and finds it by class name, which is how dot-player avoids importing every "
 		+ "addon that might supply one"
 	)
 	_check(player.component(&"NotAThing") == null, "an unknown class finds nothing")
-	_check(player.has_component(&"DotPlayerComponent"), "and has_component agrees")
+	_check(player.has_component(&"GSPlayerComponent"), "and has_component agrees")
 
 	var rebinds: Array = []
-	component.player_bound.connect(func(_p: DotPlayer) -> void: rebinds.append(1))
+	component.player_bound.connect(func(_p: GSPlayer) -> void: rebinds.append(1))
 	player.player_key = "zoe"
 	_check(
 		rebinds.size() == 1,
@@ -565,7 +565,7 @@ func _test_nodes() -> void:
 	)
 	player.player_key = "ada"
 
-	var remote_only := DotPlayerComponent.new()
+	var remote_only := GSPlayerComponent.new()
 	remote_only.local_only = true
 	player.add_child(remote_only)
 	_check(remote_only.is_active(), "a local-only component is active on a local player")
@@ -577,7 +577,7 @@ func _test_nodes() -> void:
 	)
 	player.is_local = true
 
-	var orphan := DotPlayerComponent.new()
+	var orphan := GSPlayerComponent.new()
 	add_child(orphan)
 	_check(not orphan.is_bound(), "a component outside a player binds to nothing")
 	_check(not orphan.is_active(), "and is inert")
@@ -591,7 +591,7 @@ func _test_nodes() -> void:
 
 	_check(player.describe_lines().size() >= 3, "a player describes itself")
 	_check(component.describe_lines().size() == 1, "and so does a component")
-	_check(component.component_name() == "DotPlayerComponent", "by its class name")
+	_check(component.component_name() == "GSPlayerComponent", "by its class name")
 
 	# Unbinding.
 	player.remove_child(component)

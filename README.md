@@ -2,7 +2,7 @@
 
 One shared record per player, so team, class, alive state and stats stop living in four separate dictionaries that disagree after a reconnect.
 
-`DotPlayerRoster` holds the rows. `DotPlayer` is the node that represents a player in the scene. `DotPlayerComponent` is the base class other player addons extend.
+`GSPlayerRoster` holds the rows. `GSPlayer` is the node that represents a player in the scene. `GSPlayerComponent` is the base class other player addons extend.
 
 ## Install
 
@@ -14,8 +14,8 @@ Needs Godot 4.7 or newer.
 ## Use
 
 ```gdscript
-var roster := DotPlayerRoster.new()
-roster.config = DotPlayerConfig.new()
+var roster := GSPlayerRoster.new()
+roster.config = GSPlayerConfig.new()
 add_child(roster)
 
 roster.join("ada", "Ada", peer_id, tick)
@@ -41,7 +41,7 @@ A dropped connection keeps the player's seat. Calling `join` with the same key i
 
 ## Settings
 
-All in `DotPlayerConfig`, layered like every GameSpice Core config (defaults, JSON file, environment, command line).
+All in `GSPlayerConfig`, layered like every GameSpice Core config (defaults, JSON file, environment, command line).
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
@@ -50,17 +50,17 @@ All in `DotPlayerConfig`, layered like every GameSpice Core config (defaults, JS
 
 ## Nodes
 
-`DotPlayer` extends `Node`, not a body, so it works in 2D and 3D and for players with no body (spectators, the dead, passengers). It finds its body and components in its children.
+`GSPlayer` extends `Node`, not a body, so it works in 2D and 3D and for players with no body (spectators, the dead, passengers). It finds its body and components in its children.
 
-`DotPlayerComponent` finds its player by walking up the tree, so no `NodePath` is needed. Subclasses override `_on_bound` and `_on_unbound`, not `_ready`, because the key is assigned after `_ready`. `is_active()` checks the bind and the `local_only` rule.
+`GSPlayerComponent` finds its player by walking up the tree, so no `NodePath` is needed. Subclasses override `_on_bound` and `_on_unbound`, not `_ready`, because the key is assigned after `_ready`. `is_active()` checks the bind and the `local_only` rule.
 
 | Class | Purpose |
 | --- | --- |
-| `DotPlayerRecord` | One player row: key, name, peer, team, class, character, alive, counters, metadata. |
-| `DotPlayerRoster` | Joins, rejoins, held seats, expiry, stable key order. Authoritative on the server, mirrored on clients. |
-| `DotPlayerConfig` | Capacity, reconnect window, name handling. |
-| `DotPlayer` | The scene node. |
-| `DotPlayerComponent` | Base class for player components. |
+| `GSPlayerRecord` | One player row: key, name, peer, team, class, character, alive, counters, metadata. |
+| `GSPlayerRoster` | Joins, rejoins, held seats, expiry, stable key order. Authoritative on the server, mirrored on clients. |
+| `GSPlayerConfig` | Capacity, reconnect window, name handling. |
+| `GSPlayer` | The scene node. |
+| `GSPlayerComponent` | Base class for player components. |
 
 See [docs/design.md](docs/design.md) for details.
 

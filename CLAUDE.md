@@ -1,6 +1,6 @@
 # GameSpice Player
 
-Who is in the session, and what represents them while they are in the world. `DotPlayerRoster` holds exactly one `DotPlayerRecord` per participant (authoritative on one machine, mirrored on the rest); `DotPlayer` is a plain `Node` container in the world, and `DotPlayerComponent` is the base every other player addon extends.
+Who is in the session, and what represents them while they are in the world. `GSPlayerRoster` holds exactly one `GSPlayerRecord` per participant (authoritative on one machine, mirrored on the rest); `GSPlayer` is a plain `Node` container in the world, and `GSPlayerComponent` is the base every other player addon extends.
 
 Read the family [CLAUDE.md](../../CLAUDE.md) first.
 
@@ -16,11 +16,11 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first.
 
 | Path | What |
 | --- | --- |
-| `core/dot_player_record.gd` | `DotPlayerRecord`: the row (key, name, peer, team, class, char, alive, bot, `joined_tick`) and its wire form |
-| `core/dot_player_config.gd` | `DotPlayerConfig`: capacity, bots, reserved seats, the reconnect window, names |
-| `runtime/dot_player_roster.gd` | `DotPlayerRoster`: `join`, `join_bot`, `note_disconnected`, `remove`, `advance`, setters, listings, `to_wire` / `apply_wire` |
-| `nodes/dot_player.gd` | `DotPlayer`: the container; `record()`, `component()`, `spawn_team()`, `world_position()` |
-| `nodes/dot_player_component.gd` | `DotPlayerComponent`: `_on_bound`, `_on_unbound`, `is_active()`, `local_only` |
+| `core/dot_player_record.gd` | `GSPlayerRecord`: the row (key, name, peer, team, class, char, alive, bot, `joined_tick`) and its wire form |
+| `core/dot_player_config.gd` | `GSPlayerConfig`: capacity, bots, reserved seats, the reconnect window, names |
+| `runtime/dot_player_roster.gd` | `GSPlayerRoster`: `join`, `join_bot`, `note_disconnected`, `remove`, `advance`, setters, listings, `to_wire` / `apply_wire` |
+| `nodes/dot_player.gd` | `GSPlayer`: the container; `record()`, `component()`, `spawn_team()`, `world_position()` |
+| `nodes/dot_player_component.gd` | `GSPlayerComponent`: `_on_bound`, `_on_unbound`, `is_active()`, `local_only` |
 | `examples/player_selftest.tscn` | the suite |
 
 Paths except `examples/` are in `addons/dot_player/`.
@@ -32,7 +32,7 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 ## Rules that bite
 
 - One row per participant: never keep a parallel dictionary keyed by player elsewhere. [design](docs/design.md#the-one-idea)
-- `DotPlayer` extends `Node`, never a body. [design](docs/design.md#the-one-idea)
+- `GSPlayer` extends `Node`, never a body. [design](docs/design.md#the-one-idea)
 - A disconnect holds the seat; a rejoin inside the window keeps `joined_tick`, and the held seat counts towards `max_players`. [design](docs/design.md#a-drop-is-not-a-departure-and-the-difference-is-load-bearing)
 - Call `advance(tick)`, or reconnect windows never expire. [design](docs/design.md#a-drop-is-not-a-departure-and-the-difference-is-load-bearing)
 - A mirror refuses mutators with `CODE_FORBIDDEN`; an authoritative roster refuses `apply_wire`. [design](docs/design.md#authoritative-is-a-flag-not-a-second-class)

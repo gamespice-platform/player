@@ -1,4 +1,4 @@
-class_name DotPlayer
+class_name GSPlayer
 extends Node
 
 ## What represents one participant in the world: a container for components.
@@ -8,17 +8,17 @@ extends Node
 ## picked a physics model, and a spectator, a dead player and a player riding in a
 ## vehicle are all participants with no body of their own at that moment.
 ##
-## So a [DotPlayer] holds the key and finds the body, rather than being one. Everything
+## So a [GSPlayer] holds the key and finds the body, rather than being one. Everything
 ## that actually does something — a controller, a character, a weapon, an animation
-## driver — is a [DotPlayerComponent] under it, and finds its way back here by walking
+## driver — is a [GSPlayerComponent] under it, and finds its way back here by walking
 ## up rather than by a path somebody typed.
 ##
 ## [codeblock]
-## DotPlayer            player_key = "ada", roster_ref -> the session roster
+## GSPlayer            player_key = "ada", roster_ref -> the session roster
 ##   CharacterBody3D    the body, found through body_ref
-##   DotFpsController   a component
-##   DotPlayerChar      a component
-##   DotPlayerAnimDriver a component
+##   GSFpsController   a component
+##   GSPlayerChar      a component
+##   GSPlayerAnimDriver a component
 ## [/codeblock]
 
 const CHANNEL := "player"
@@ -57,13 +57,13 @@ signal alive_changed(alive: bool)
 		key_changed.emit(old, value)
 
 ## Where the session's roster is. Defaults to the registered service.
-@export var roster_ref: DotNodeRef = null
+@export var roster_ref: GSNodeRef = null
 
 ## Where this player's physics body is, if they have one.
 ##
 ## Optional: a spectator has none, and a component that needs one should say so rather
 ## than assume. Defaults to the first child that is a collision object.
-@export var body_ref: DotNodeRef = null
+@export var body_ref: GSNodeRef = null
 
 ## Whether this node represents the person at this keyboard.
 ##
@@ -73,7 +73,7 @@ signal alive_changed(alive: bool)
 ## class in the same tree.
 @export var is_local: bool = false
 
-var _roster: DotPlayerRoster = null
+var _roster: GSPlayerRoster = null
 var _body: Node = null
 var _bound: bool = false
 
@@ -110,7 +110,7 @@ func _rebind() -> void:
 		# Not an error. A client's mirror may not have the row yet — the node can arrive
 		# before the roster update that explains it — so this is retried whenever the
 		# roster changes rather than warned about once and forgotten.
-		DotLog.debug(CHANNEL, "no roster row yet", {"key": player_key})
+		GSLog.debug(CHANNEL, "no roster row yet", {"key": player_key})
 		return
 
 	_bound = true
@@ -131,12 +131,12 @@ func _regroup() -> void:
 
 
 func _resolve_roster() -> void:
-	var wanted: DotPlayerRoster = null
+	var wanted: GSPlayerRoster = null
 
 	if roster_ref != null:
-		wanted = roster_ref.resolve_or_null(self, CHANNEL) as DotPlayerRoster
+		wanted = roster_ref.resolve_or_null(self, CHANNEL) as GSPlayerRoster
 	else:
-		wanted = DotRegistry.get_service(DotPlayerRoster.SERVICE) as DotPlayerRoster
+		wanted = GSRegistry.get_service(GSPlayerRoster.SERVICE) as GSPlayerRoster
 
 	if wanted == _roster:
 		return
@@ -167,7 +167,7 @@ func _on_roster_alive_changed(key: String, alive: bool) -> void:
 		alive_changed.emit(alive)
 
 
-func _on_roster_joined(record: DotPlayerRecord) -> void:
+func _on_roster_joined(record: GSPlayerRecord) -> void:
 	# The retry named in _rebind: the node arrived before its row did.
 	if not _bound and record.key == player_key:
 		_bound = true
@@ -176,7 +176,7 @@ func _on_roster_joined(record: DotPlayerRecord) -> void:
 
 # --- Reading ----------------------------------------------------------------
 
-func roster() -> DotPlayerRoster:
+func roster() -> GSPlayerRoster:
 	if _roster == null:
 		_resolve_roster()
 
@@ -184,7 +184,7 @@ func roster() -> DotPlayerRoster:
 
 
 ## This player's row, or null.
-func record() -> DotPlayerRecord:
+func record() -> GSPlayerRecord:
 	var r := roster()
 	return r.get_record(player_key) if r != null else null
 
@@ -213,7 +213,7 @@ func is_alive() -> bool:
 	return rec.alive if rec != null else false
 
 
-## The team, as [DotSpawnArea3D] and friends ask for it by duck typing.
+## The team, as [GSSpawnArea3D] and friends ask for it by duck typing.
 ##
 ## Named for the caller rather than for this class: GameSpice Spawn calls
 ## [code]spawn_team[/code] on whatever body entered an area, and having the player node
@@ -253,7 +253,7 @@ func world_position() -> Vector3:
 		var p := (b as Node2D).global_position
 		return Vector3(p.x, p.y, 0.0)
 
-	# No fallback to this node's own transform: a DotPlayer is a plain Node by design
+	# No fallback to this node's own transform: a GSPlayer is a plain Node by design
 	# (see the class documentation), so it has no position of its own to fall back to,
 	# and a caller reading zero for a player with no body is reading the truth.
 	return Vector3.ZERO
@@ -261,9 +261,9 @@ func world_position() -> Vector3:
 
 # --- Components -------------------------------------------------------------
 
-## Every [DotPlayerComponent] under this node, in tree order.
-func components() -> Array[DotPlayerComponent]:
-	var out: Array[DotPlayerComponent] = []
+## Every [GSPlayerComponent] under this node, in tree order.
+func components() -> Array[GSPlayerComponent]:
+	var out: Array[GSPlayerComponent] = []
 	_gather_components(self, out)
 	return out
 
@@ -273,7 +273,7 @@ func components() -> Array[DotPlayerComponent]:
 ## By name rather than by type so that GameSpice Player does not have to import every addon
 ## that might supply one — which is the whole reason this is the base package and they
 ## are not.
-func component(type_name: StringName) -> DotPlayerComponent:
+func component(type_name: StringName) -> GSPlayerComponent:
 	for c in components():
 		if c.is_class(String(type_name)):
 			return c
@@ -292,53 +292,53 @@ func has_component(type_name: StringName) -> bool:
 	return component(type_name) != null
 
 
-func _gather_components(node: Node, out: Array[DotPlayerComponent]) -> void:
+func _gather_components(node: Node, out: Array[GSPlayerComponent]) -> void:
 	for child in node.get_children():
-		if child is DotPlayerComponent:
-			out.append(child as DotPlayerComponent)
+		if child is GSPlayerComponent:
+			out.append(child as GSPlayerComponent)
 
-		# Not descending past a nested DotPlayer: a player node inside another one is a
+		# Not descending past a nested GSPlayer: a player node inside another one is a
 		# vehicle passenger or a preview, and its components are not this player's.
-		if not (child is DotPlayer):
+		if not (child is GSPlayer):
 			_gather_components(child, out)
 
 
 # --- Finding ----------------------------------------------------------------
 
-## The [DotPlayer] a node belongs to, by walking up. Null for a node outside one.
-static func of(node: Node) -> DotPlayer:
+## The [GSPlayer] a node belongs to, by walking up. Null for a node outside one.
+static func of(node: Node) -> GSPlayer:
 	var at := node
 
 	while at != null:
-		if at is DotPlayer:
-			return at as DotPlayer
+		if at is GSPlayer:
+			return at as GSPlayer
 		at = at.get_parent()
 
 	return null
 
 
 ## Every player node in the tree, by group.
-static func all(tree: SceneTree) -> Array[DotPlayer]:
-	var out: Array[DotPlayer] = []
+static func all(tree: SceneTree) -> Array[GSPlayer]:
+	var out: Array[GSPlayer] = []
 
 	if tree == null:
 		return out
 
 	for node in tree.get_nodes_in_group(GROUP):
-		if node is DotPlayer:
-			out.append(node as DotPlayer)
+		if node is GSPlayer:
+			out.append(node as GSPlayer)
 
 	return out
 
 
 ## The player node for one key, or null.
-static func find(tree: SceneTree, key: String) -> DotPlayer:
+static func find(tree: SceneTree, key: String) -> GSPlayer:
 	if tree == null or key == "":
 		return null
 
 	for node in tree.get_nodes_in_group(StringName("dot_player_%s" % key)):
-		if node is DotPlayer:
-			return node as DotPlayer
+		if node is GSPlayer:
+			return node as GSPlayer
 
 	return null
 
@@ -363,4 +363,4 @@ func describe_lines() -> PackedStringArray:
 
 
 func describe() -> String:
-	return "DotPlayer(%s)" % (player_key if player_key != "" else "<unbound>")
+	return "GSPlayer(%s)" % (player_key if player_key != "" else "<unbound>")

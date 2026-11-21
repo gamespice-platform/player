@@ -9,9 +9,9 @@ extends EditorPlugin
 const _ICON := "res://addons/dot_player/icon_placeholder.svg"
 
 const _TYPES := [
-	["DotPlayerRoster", "Node", "res://addons/dot_player/runtime/dot_player_roster.gd"],
-	["DotPlayer", "Node", "res://addons/dot_player/nodes/dot_player.gd"],
-	["DotPlayerComponent", "Node", "res://addons/dot_player/nodes/dot_player_component.gd"],
+	["GSPlayerRoster", "Node", "res://addons/dot_player/runtime/dot_player_roster.gd"],
+	["GSPlayer", "Node", "res://addons/dot_player/nodes/dot_player.gd"],
+	["GSPlayerComponent", "Node", "res://addons/dot_player/nodes/dot_player_component.gd"],
 ]
 
 

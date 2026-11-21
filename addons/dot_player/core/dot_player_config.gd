@@ -1,6 +1,6 @@
 @tool
-class_name DotPlayerConfig
-extends DotConfig
+class_name GSPlayerConfig
+extends GSConfig
 
 ## Every policy about who may be in the session, layered.
 
@@ -66,10 +66,10 @@ func cli_prefix() -> String:
 	return "--player-"
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if max_players > 0 and max_bots > max_players:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			(
 				"There is room for %d players and up to %d bots, so the server can "
 				+ "fill with bots and then refuse everybody."
@@ -77,9 +77,9 @@ func validate() -> DotResult:
 		)
 
 	if max_name_length < 1:
-		return DotResult.fail(DotError.CODE_INVALID, "A name of zero characters is not a name.")
+		return GSResult.fail(GSError.CODE_INVALID, "A name of zero characters is not a name.")
 
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func reconnect_window_ticks() -> int:

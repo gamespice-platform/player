@@ -1,4 +1,4 @@
-class_name DotPlayerComponent
+class_name GSPlayerComponent
 extends Node
 
 ## The base every other player addon's node extends.
@@ -7,7 +7,7 @@ extends Node
 ## Before this, a controller had a [code]player_path[/code], a weapon had a
 ## [code]owner_path[/code] and an animation driver had an exported [NodePath] to a
 ## character, and all three were set by hand in a scene that a spawner then instanced
-## under a different parent. A component walks up instead, finds the [DotPlayer], and
+## under a different parent. A component walks up instead, finds the [GSPlayer], and
 ## is told when the key changes.
 ##
 ## Subclasses override [method _on_bound] and [method _on_unbound] rather than
@@ -22,17 +22,17 @@ extends Node
 const COMPONENT_CHANNEL := "player.component"
 
 ## This component's player changed, or arrived. Also emitted on the first bind.
-signal player_bound(player: DotPlayer)
+signal player_bound(player: GSPlayer)
 
 ## Its player went away: the key was cleared, or the node was reparented out.
 signal player_unbound()
 
-## Where the owning [DotPlayer] is.
+## Where the owning [GSPlayer] is.
 ##
 ## Left null, the nearest ancestor is used, which is right in every scene this family
 ## ships. Set it for the unusual case: a HUD element that is a component of a player it
 ## is not under.
-@export var player_ref: DotNodeRef = null
+@export var player_ref: GSNodeRef = null
 
 ## Whether this component does anything when its player is not the local one.
 ##
@@ -41,7 +41,7 @@ signal player_unbound()
 ## keyboard on behalf of somebody else.
 @export var local_only: bool = false
 
-var _player: DotPlayer = null
+var _player: GSPlayer = null
 
 
 func _ready() -> void:
@@ -55,7 +55,7 @@ func _exit_tree() -> void:
 # --- Binding ----------------------------------------------------------------
 
 ## The player this belongs to, or null.
-func player() -> DotPlayer:
+func player() -> GSPlayer:
 	if _player == null or not is_instance_valid(_player):
 		_bind()
 
@@ -95,12 +95,12 @@ func _bind() -> void:
 	if not is_inside_tree():
 		return
 
-	var found: DotPlayer = null
+	var found: GSPlayer = null
 
 	if player_ref != null:
-		found = player_ref.resolve_or_null(self, COMPONENT_CHANNEL) as DotPlayer
+		found = player_ref.resolve_or_null(self, COMPONENT_CHANNEL) as GSPlayer
 	else:
-		found = DotPlayer.of(get_parent())
+		found = GSPlayer.of(get_parent())
 
 	if found == _player:
 		return
@@ -108,7 +108,7 @@ func _bind() -> void:
 	_unbind()
 
 	if found == null:
-		DotLog.debug(COMPONENT_CHANNEL, "component has no player", {"node": name})
+		GSLog.debug(COMPONENT_CHANNEL, "component has no player", {"node": name})
 		return
 
 	_player = found
@@ -154,12 +154,12 @@ func _on_player_leaving() -> void:
 ##
 ## [b]Must be safe to call twice.[/b] A pooled player node reused for the next spawn
 ## calls it again with the same node and a different key.
-func _on_bound(_p: DotPlayer) -> void:
+func _on_bound(_p: GSPlayer) -> void:
 	pass
 
 
 ## Called when it loses one.
-func _on_unbound(_p: DotPlayer) -> void:
+func _on_unbound(_p: GSPlayer) -> void:
 	pass
 
 
