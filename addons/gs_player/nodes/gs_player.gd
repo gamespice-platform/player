@@ -24,7 +24,7 @@ extends Node
 const CHANNEL := "player"
 
 ## The group every player node joins, so a game can find them all without a registry.
-const GROUP := &"dot_players"
+const GROUP := &"gs_players"
 
 ## Fired once the key and the roster are both set and the record exists.
 ##
@@ -119,15 +119,15 @@ func _rebind() -> void:
 
 ## A per-key group, so one player can be found without scanning.
 ##
-## [code]dot_player_ada[/code] rather than a registry entry, because a registry name is
+## [code]gs_player_ada[/code] rather than a registry entry, because a registry name is
 ## global to the process and two servers in one editor session would collide on it.
 func _regroup() -> void:
 	for group in get_groups():
-		if String(group).begins_with("dot_player_"):
+		if String(group).begins_with("gs_player_"):
 			remove_from_group(group)
 
 	if player_key != "":
-		add_to_group(StringName("dot_player_%s" % player_key))
+		add_to_group(StringName("gs_player_%s" % player_key))
 
 
 func _resolve_roster() -> void:
@@ -336,7 +336,7 @@ static func find(tree: SceneTree, key: String) -> GSPlayer:
 	if tree == null or key == "":
 		return null
 
-	for node in tree.get_nodes_in_group(StringName("dot_player_%s" % key)):
+	for node in tree.get_nodes_in_group(StringName("gs_player_%s" % key)):
 		if node is GSPlayer:
 			return node as GSPlayer
 

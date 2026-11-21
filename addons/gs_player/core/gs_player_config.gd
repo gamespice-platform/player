@@ -59,7 +59,7 @@ extends GSConfig
 
 
 func env_prefix() -> String:
-	return "DOT_PLAYER_"
+	return "GS_PLAYER_"
 
 
 func cli_prefix() -> String:

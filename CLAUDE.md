@@ -4,7 +4,7 @@ Who is in the session, and what represents them while they are in the world. `GS
 
 Read the family [CLAUDE.md](../../CLAUDE.md) first.
 
-**The distributable is `addons/dot_player/`.** It requires [GameSpice Core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored).
+**The distributable is `addons/gs_player/`.** It requires [GameSpice Core](../gs-core) and nothing else (`ln -s ../../gs-core/addons/gs_core addons/gs_core`, gitignored).
 
 ## Read before
 
@@ -16,14 +16,14 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first.
 
 | Path | What |
 | --- | --- |
-| `core/dot_player_record.gd` | `GSPlayerRecord`: the row (key, name, peer, team, class, char, alive, bot, `joined_tick`) and its wire form |
-| `core/dot_player_config.gd` | `GSPlayerConfig`: capacity, bots, reserved seats, the reconnect window, names |
-| `runtime/dot_player_roster.gd` | `GSPlayerRoster`: `join`, `join_bot`, `note_disconnected`, `remove`, `advance`, setters, listings, `to_wire` / `apply_wire` |
-| `nodes/dot_player.gd` | `GSPlayer`: the container; `record()`, `component()`, `spawn_team()`, `world_position()` |
-| `nodes/dot_player_component.gd` | `GSPlayerComponent`: `_on_bound`, `_on_unbound`, `is_active()`, `local_only` |
+| `core/gs_player_record.gd` | `GSPlayerRecord`: the row (key, name, peer, team, class, char, alive, bot, `joined_tick`) and its wire form |
+| `core/gs_player_config.gd` | `GSPlayerConfig`: capacity, bots, reserved seats, the reconnect window, names |
+| `runtime/gs_player_roster.gd` | `GSPlayerRoster`: `join`, `join_bot`, `note_disconnected`, `remove`, `advance`, setters, listings, `to_wire` / `apply_wire` |
+| `nodes/gs_player.gd` | `GSPlayer`: the container; `record()`, `component()`, `spawn_team()`, `world_position()` |
+| `nodes/gs_player_component.gd` | `GSPlayerComponent`: `_on_bound`, `_on_unbound`, `is_active()`, `local_only` |
 | `examples/player_selftest.tscn` | the suite |
 
-Paths except `examples/` are in `addons/dot_player/`.
+Paths except `examples/` are in `addons/gs_player/`.
 
 ## Running and testing
 
@@ -38,7 +38,7 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 - A mirror refuses mutators with `CODE_FORBIDDEN`; an authoritative roster refuses `apply_wire`. [design](docs/design.md#authoritative-is-a-flag-not-a-second-class)
 - Order comes from `_order` / `keys()`, never dictionary iteration. [design](docs/design.md#authoritative-is-a-flag-not-a-second-class)
 - A component reads its player in `_on_bound`, never `_ready`, and `_on_bound` must be safe to call twice. [design](docs/design.md#_on_bound-not-_ready)
-- dot-player never imports the addons built on it; `component()` matches by class name. [design](docs/design.md#small-decisions-with-reasons)
+- gs-player never imports the addons built on it; `component()` matches by class name. [design](docs/design.md#small-decisions-with-reasons)
 - Names are cleaned and made unique, never refused. [design](docs/design.md#names-are-cleaned-never-refused)
 
 Deliberately not here: spawning, moving, rendering, damage, a transport. [design](docs/design.md#what-this-does-not-do)

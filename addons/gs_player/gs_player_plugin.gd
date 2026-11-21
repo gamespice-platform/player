@@ -6,12 +6,12 @@ extends EditorPlugin
 ## No autoloads: a listen server holds an authoritative roster and the client half of
 ## the same process holds a mirror, which is precisely the pair an autoload forbids.
 
-const _ICON := "res://addons/dot_player/icon_placeholder.svg"
+const _ICON := "res://addons/gs_player/icon_placeholder.svg"
 
 const _TYPES := [
-	["GSPlayerRoster", "Node", "res://addons/dot_player/runtime/dot_player_roster.gd"],
-	["GSPlayer", "Node", "res://addons/dot_player/nodes/dot_player.gd"],
-	["GSPlayerComponent", "Node", "res://addons/dot_player/nodes/dot_player_component.gd"],
+	["GSPlayerRoster", "Node", "res://addons/gs_player/runtime/gs_player_roster.gd"],
+	["GSPlayer", "Node", "res://addons/gs_player/nodes/gs_player.gd"],
+	["GSPlayerComponent", "Node", "res://addons/gs_player/nodes/gs_player_component.gd"],
 ]
 
 

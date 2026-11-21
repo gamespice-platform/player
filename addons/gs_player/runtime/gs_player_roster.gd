@@ -30,7 +30,7 @@ extends Node
 const CHANNEL := "player.roster"
 
 ## Registry name, so anything can find the session's roster without a scene path.
-const SERVICE := &"dot_player_roster"
+const SERVICE := &"gs_player_roster"
 
 ## Somebody joined for the first time.
 signal joined(record: GSPlayerRecord)

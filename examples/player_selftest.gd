@@ -1,6 +1,6 @@
 extends Node
 
-## Exercises dot-player with no world, no transport and no game.
+## Exercises gs-player with no world, no transport and no game.
 ##
 ## The roster is the half worth checking hardest, because it is the half that is wrong
 ## in a way nobody notices: a reconnect that loses a score, a held seat that lets a
@@ -28,7 +28,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	_line("dot-player self-test")
+	_line("gs-player self-test")
 	_line("")
 
 	_test_record()
@@ -147,7 +147,7 @@ func _test_config() -> void:
 		+ "then refuses everybody"
 	)
 
-	_check(c.env_prefix() == "DOT_PLAYER_", "and it layers the family's way")
+	_check(c.env_prefix() == "GS_PLAYER_", "and it layers the family's way")
 	_check(
 		c.allow_duplicate_names,
 		"two people may share a name by default — refusing means telling somebody "
@@ -511,7 +511,7 @@ func _test_nodes() -> void:
 	_check(player.display_name() == "Ada", "and its name")
 	_check(player.is_in_group(GSPlayer.GROUP), "it joins the group of all players")
 	_check(
-		player.is_in_group(&"dot_player_ada"),
+		player.is_in_group(&"gs_player_ada"),
 		"and a per-key group, which is how one player is found without a registry name "
 		+ "that two servers in one process would collide on"
 	)
@@ -526,8 +526,8 @@ func _test_nodes() -> void:
 	var _z := roster.join("zoe", "Zoe", 8, 0)
 	player.player_key = "zoe"
 	_check(player.display_name() == "Zoe", "reassigning the key rebinds the node")
-	_check(not player.is_in_group(&"dot_player_ada"), "leaving the old key's group")
-	_check(player.is_in_group(&"dot_player_zoe"), "and joining the new one")
+	_check(not player.is_in_group(&"gs_player_ada"), "leaving the old key's group")
+	_check(player.is_in_group(&"gs_player_zoe"), "and joining the new one")
 	player.player_key = "ada"
 
 	# A body.
@@ -549,7 +549,7 @@ func _test_nodes() -> void:
 	_check(player.components().size() == 1, "the player lists it")
 	_check(
 		player.component(&"GSPlayerComponent") == component,
-		"and finds it by class name, which is how dot-player avoids importing every "
+		"and finds it by class name, which is how gs-player avoids importing every "
 		+ "addon that might supply one"
 	)
 	_check(player.component(&"NotAThing") == null, "an unknown class finds nothing")

@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="dot-player"
+config/name="gs-player"
 config/description="Who is in the session and what represents them: an authoritative roster that survives a reconnect, a player node that is a container for components rather than a character, and the component base every other player addon extends."
 run/main_scene="res://examples/player_selftest.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
@@ -23,7 +23,7 @@ window/size/viewport_height=900
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/dot_player/plugin.cfg")
+enabled=PackedStringArray("res://addons/gs_player/plugin.cfg")
 
 [importer_defaults]
 

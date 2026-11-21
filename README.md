@@ -6,7 +6,7 @@ One shared record per player, so team, class, alive state and stats stop living 
 
 ## Install
 
-1. Copy `addons/dot_player/` and `addons/dot_core/` into your project.
+1. Copy `addons/gs_player/` and `addons/gs_core/` into your project.
 2. Enable both in *Project > Project Settings > Plugins*.
 
 Needs Godot 4.7 or newer.
